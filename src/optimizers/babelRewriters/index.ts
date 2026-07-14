@@ -21,6 +21,7 @@ export function babelRewrite(...rewriters: BabelRewriter[]): PipelineStage {
 }
 
 export * from "./arrowFunctionRewrite";
+export * from "./arrowFunctionSingle";
 export * from "./classRewrite";
 export * from "./hoistAllFunctions";
 export * from "./inlineConstantComputedKeys";

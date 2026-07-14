@@ -1,5 +1,4 @@
-import { arrowFunctionRewrite, babelRewrite, bunMinify, classRewrite, hoistAllFunctions, inlineConstantComputedKeys, pipelineBuild, stringDedupe } from ".";
-import { arrowFunctionSingle } from "./src/optimizers/babelRewriters/arrowFunctionSingle";
+import { arrowFunctionRewrite, babelRewrite, bunMinify, classRewrite, hoistAllFunctions, inlineConstantComputedKeys, pipelineBuild, stringDedupe, arrowFunctionSingle } from "the-super-aggressive-bundler";
 
 await pipelineBuild({
     entrypoints: ["./example.ts"],
