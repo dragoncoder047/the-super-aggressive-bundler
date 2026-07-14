@@ -5,7 +5,7 @@
     "description": "collection of javascript/typescript transformers to do more aggressive optimizations of your bundle using Bun",
     "main": "src/index.ts",
     "keywords": [],
-    "author": "",
+    "author": "dragoncoder047",
     "license": "AGPL-3.0-only",
     "type": "module",
     "devDependencies": {
