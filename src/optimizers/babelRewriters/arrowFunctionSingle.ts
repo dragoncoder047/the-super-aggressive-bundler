@@ -12,29 +12,6 @@ export function arrowFunctionSingle(): BabelRewriter {
                 if (!retArg) return;
                 const { params, async: isAsync } = path.node;
                 path.replaceWith(t.arrowFunctionExpression(params, retArg, isAsync));
-            },
-            ClassMethod(path) {
-                const node = path.node;
-                if (node.kind !== "method") return;
-                if (node.generator) return;
-
-                const retArg = getSingleReturnBody(node.body);
-                if (!retArg) return;
-
-                const { params, async: isAsync, computed, static: isStatic, key, decorators } = node;
-
-                const arrow = t.arrowFunctionExpression(params as t.FunctionParameter[], retArg, isAsync);
-
-                // public method -> public field, private method -> private field
-                var newProp: t.ClassProperty | t.ClassPrivateProperty
-                if (t.isPrivateName(key)) {
-                    newProp = t.classPrivateProperty(key, arrow, null, isStatic)
-                    newProp.decorators = decorators;
-                } else {
-                    newProp = t.classProperty(key, arrow, null, decorators, computed, isStatic)
-                }
-
-                path.replaceWith(newProp);
             }
         });
 

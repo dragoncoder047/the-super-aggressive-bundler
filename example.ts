@@ -26,12 +26,6 @@ export function cannotBeRewrittenAsArrow2(this: any, a: any, b: any, c: any) {
 
 export class TheClass {
     bar = 1;
-    methodThatUsesThis() {
-        return this.bar;
-    }
-    methodThatDoesNotUseThis() {
-        return 1;
-    }
 }
 
 enum Foo {

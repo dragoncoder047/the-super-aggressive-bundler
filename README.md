@@ -56,6 +56,4 @@ and the more times the string is repeated, the better minification you get!
 
 ## arrowFunctionRewrite
 
-this rewrites all your `function` functions as arrow functions wherever possible (i.e. when their bodies don't use their own name, `this`, `super`, `arguments`, or `new.target`) and then hoists them to the top if it was a declaration (preserving the normal javascript weirdness). class methods are included.
-
-additionally, rewrites all arrow functions
+this rewrites all your `function` functions as arrow functions wherever possible (i.e. when their bodies don't use their own name, `this`, `super`, `arguments`, or `new.target`) and then hoists them to the top if it was a declaration (preserving the normal javascript weirdness).
