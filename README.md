@@ -10,6 +10,8 @@ the main entry point is `pipelineBuild()` - it takes 2 options, the first one is
 
 most of the optimizers are Babel AST transformations, so they might need to be wrapped in `babelRewrite()` to make it a transformer to fit in `pipelineBuild()`. if there are multiple consecutive Babel transforms, you can put them all in the same `babelRewrite()` to save having to stringify and re-parse on each transform.
 
+for the general idea, see [example-build.ts](./example-build.ts).
+
 ## available optimizers
 
 ### bunMinify
