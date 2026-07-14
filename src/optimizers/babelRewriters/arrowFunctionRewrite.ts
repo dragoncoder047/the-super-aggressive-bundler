@@ -21,42 +21,11 @@ export function arrowFunctionRewrite(): BabelRewriter {
                 const arrow = t.arrowFunctionExpression(params, body, isAsync);
                 path.replaceWith(arrow);
             },
-            ClassMethod(path) {
-                const node = path.node;
-                if (node.kind !== "method") return;
-                if (node.generator) return;
-
-                const retArg = getSingleReturnBody(node.body);
-                if (!retArg) return;
-
-                const { params, async: isAsync, computed, static: isStatic, key, decorators } = node;
-
-                const arrow = t.arrowFunctionExpression(params as t.FunctionParameter[], retArg, isAsync);
-
-                // public method -> public field, private method -> private field
-                var newProp: t.ClassProperty | t.ClassPrivateProperty
-                if (t.isPrivateName(key)) {
-                    newProp = t.classPrivateProperty(key, arrow, null, isStatic)
-                    newProp.decorators = decorators;
-                } else {
-                    newProp = t.classProperty(key, arrow, null, decorators, computed, isStatic)
-                }
-
-                path.replaceWith(newProp);
-            }
         })
 
         return ast;
     }
 }
-
-function getSingleReturnBody(body: t.BlockStatement | t.Expression): t.Expression | null {
-    if (!t.isBlockStatement(body)) return null;
-    if (body.body.length !== 1) return null;
-    const stmt = body.body[0];
-    if (!t.isReturnStatement(stmt) || !stmt.argument) return null;
-    return stmt.argument;
-};
 
 function canConvertFunctionDeclaration(path: NodePath<t.FunctionDeclaration>): boolean {
     const node = path.node;

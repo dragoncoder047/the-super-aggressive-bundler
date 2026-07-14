@@ -3,9 +3,9 @@ const a = Math.random();
 const b = Math.random();
 
 export function main(x: any) {
-    console.log("flags1", x, innerCannotBeHoisted(flags1));
-    function innerCannotBeHoisted(x: any[]) {
-        x.forEach(i => i.length ? innerCannotBeHoisted(i) : null);
+    console.log("flags1", x, inner(flags1));
+    function inner(x: any[]) {
+        x.forEach(i => i.length ? inner(i) : null);
         return x;
     }
 }
@@ -39,6 +39,10 @@ enum Foo {
 }
 
 export const x = { [Foo.bar]: 1, [Foo.baz]: 2, ["hi"]: 3 };
+
+export function functionThatReturnsDirectly(a: number, b: number, c: number) {
+    return a + b * c;
+}
 
 export const str1 = String.raw`foo${a}bar${b}bam`;
 export const str2 = `foo${a}bar${b}bam`;

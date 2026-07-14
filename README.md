@@ -20,11 +20,15 @@ just minifies the output again using Bun - useful to be used after other optimiz
 
 ### classRewrite
 
-rewrites `class A {}` into `var A = class {}` to get around [this Bun bug](https://github.com/oven-sh/bun/issues/32652)
+rewrites `class A {}` into `var A = class {}` to get around [this Bun bug](https://github.com/oven-sh/bun/issues/32652).
+
+### arrowFunctionSingle
+
+rewrites `() => { return X; }` into `() => X` to get around [this Bun bug](https://github.com/oven-sh/bun/issues/30654).
 
 ### inlineConstantComputedKeys
 
-workaround for [this Bun bug](https://github.com/oven-sh/bun/issues/29487). rewrites `{ [X]: Y }` into `{ X: Y }` when X is a constant (number or string literal).
+rewrites `{ [X]: Y }` into `{ X: Y }` when X is a constant (number or string literal) to get around [this Bun bug](https://github.com/oven-sh/bun/issues/29487)
 
 ### stringDedupe
 
@@ -53,3 +57,5 @@ and the more times the string is repeated, the better minification you get!
 ## arrowFunctionRewrite
 
 this rewrites all your `function` functions as arrow functions wherever possible (i.e. when their bodies don't use their own name, `this`, `super`, `arguments`, or `new.target`) and then hoists them to the top if it was a declaration (preserving the normal javascript weirdness). class methods are included.
+
+additionally, rewrites all arrow functions
