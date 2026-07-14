@@ -1,4 +1,4 @@
-# bun-pipeline
+# the-super-aggressive-bundler
 
 collection of javascript/typescript transformers to do more aggressive optimizations of your bundle using Bun.
 
