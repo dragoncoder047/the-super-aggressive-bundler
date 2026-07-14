@@ -1,0 +1,26 @@
+{
+    "name": "the-super-aggressive-bundler",
+    "version": "0.1.0",
+    "sideEffects": false,
+    "description": "collection of javascript/typescript transformers to do more aggressive optimizations of your bundle using Bun",
+    "main": "src/index.ts",
+    "keywords": [],
+    "author": "",
+    "license": "AGPL-3.0-only",
+    "type": "module",
+    "devDependencies": {
+        "@types/bun": "^1.3.14",
+        "@types/node": "^26.1.1",
+        "bun": "^1.3.14"
+    },
+    "peerDependencies": {
+        "bun": "^1.3.14"
+    },
+    "dependencies": {
+        "@ampproject/remapping": "^2.3.0",
+        "@babel/generator": "^8.0.0",
+        "@babel/parser": "^8.0.4",
+        "@babel/traverse": "^8.0.4",
+        "@babel/types": "^8.0.4"
+    }
+}
