@@ -25,7 +25,6 @@ export function arrowFunctionRewrite(): BabelRewriter {
                 const node = path.node;
                 if (node.kind !== "method") return;
                 if (node.generator) return;
-                if (hasUnsafeThis(path)) return;
 
                 const retArg = getSingleReturnBody(node.body);
                 if (!retArg) return;
