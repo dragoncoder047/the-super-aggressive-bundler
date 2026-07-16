@@ -34,6 +34,16 @@ enum Foo {
 
 export const x = { [Foo.bar]: 1, [Foo.baz]: 2, ["hi"]: 3 };
 
+export const y = { longproperty1: 1, longproperty2: 2, longproperty3: 3 };
+
+export const z = { "longproperty1": 1, "longproperty2": 2, "longproperty3": 3 };
+
+export function myFunction(arg: typeof y) {
+    console.log(arg.longproperty1, arg.longproperty2 + arg.longproperty3);
+}
+
+await Promise.resolve();
+
 export function functionThatReturnsDirectly(a: number, b: number, c: number) {
     return a + b * c;
 }

@@ -8,14 +8,28 @@ export interface StringDedupeOptions {
      * @default 3
      */
     minimumRepeat?: number;
+    /**
+     * Whether to treat property accesses as strings and replace them with a bracket access if that string gets replaced.
+     * Useful when minifying codebases with lots of long property names, but carries a significant performance penalty.
+     * @default false
+     */
+    includeProperties?: boolean;
+    /**
+     * Minimum length of a property for it to be considered for replacement if {@link includeProperties} is true.
+     * @default 5
+     */
+    propertyMinimumLength?: number;
 }
 
 export function stringDedupe(options: StringDedupeOptions = {}): BabelRewriter {
     return ast => {
         const collector = new StringTableCollector(options.minimumRepeat ?? 3);
+        const alsoDoProps = options.includeProperties ?? false;
+        const minPropLength = options.propertyMinimumLength ?? 5;
         // first pass: find all the strings
         traverse(ast, {
             StringLiteral(path) {
+                if (t.isImportDeclaration(path.parent) || t.isImportSpecifier(path.parent)) return;
                 collector.add(path.node.value);
             },
             TemplateLiteral(path) {
@@ -23,8 +37,21 @@ export function stringDedupe(options: StringDedupeOptions = {}): BabelRewriter {
                 if (t.isTaggedTemplateExpression(path.parentPath?.node)) return;
                 for (const q of path.node.quasis) {
                     const raw = q.value.cooked ?? q.value.raw;
-                    if (raw) collector.add(raw);
+                    if (raw && raw.length > 0) collector.add(raw);
                 }
+            },
+            ObjectProperty(path) {
+                if (!alsoDoProps) return;
+                const { key, computed } = path.node;
+                if (computed) return;
+                if (t.isIdentifier(key) && key.name.length > minPropLength) collector.add(key.name);
+                if (t.isStringLiteral(key) && key.value.length > minPropLength) collector.add(key.value);
+            },
+            MemberExpression(path) {
+                if (!alsoDoProps) return;
+                const { property, computed } = path.node;
+                if (computed) return;
+                if (t.isIdentifier(property) && property.name.length > minPropLength) collector.add(property.name);
             }
         });
 
@@ -33,42 +60,64 @@ export function stringDedupe(options: StringDedupeOptions = {}): BabelRewriter {
         // second pass: replace the strings
         traverse(ast, {
             StringLiteral(path) {
-                // console.log("pass 2: visiting string literal", path.node.value);
+                if (t.isImportDeclaration(path.parent) || t.isImportSpecifier(path.parent)) return;
                 const str = path.node.value;
                 if (collector.isReplaced(str)) {
-                    // console.log("replaced");
                     path.replaceWith(collector.getReplacementExpression(str));
                 }
             },
 
             TemplateLiteral(path) {
-                // console.log("pass 2: visiting template literal", path.node.quasis.map(e => e.value.raw));
                 if (t.isTaggedTemplateExpression(path.parentPath?.node)) return;
 
                 const { quasis, expressions } = path.node;
 
                 // wow, it's just normal string
                 if (quasis.length === 1 && expressions.length === 0) {
-                    const raw = quasis[0].value.cooked ?? quasis[0].value.raw
+                    const raw = quasis[0].value.cooked ?? quasis[0].value.raw;
                     if (collector.isReplaced(raw)) {
                         path.replaceWith(collector.getReplacementExpression(raw));
                     }
                     return;
                 }
 
+                var firstIsString = false;
                 for (var i = 0; i < quasis.length; i++) {
-                    const raw = quasis[i].value.cooked ?? quasis[i].value.raw
-                    if (collector.isReplaced(raw)) {
+                    const raw = quasis[i].value.cooked ?? quasis[i].value.raw;
+                    if (collector.isReplaced(raw) && raw.length > 0) {
                         quasis.splice(i, 1,
                             t.templateElement({ cooked: "", raw: "" }, false),
                             t.templateElement({ cooked: "", raw: "" }, i === expressions.length));
                         expressions.splice(i, 0, collector.getReplacementExpression(raw) as any);
+                        if (i === 0) firstIsString = true;
                         i++;
                     }
                 }
                 // if it's all quasis, with no string chunks left, make it a plus expression
                 if (quasis.every(quasi => quasi.value.cooked === "")) {
-                    path.replaceWith(t.parenthesizedExpression(expressions.reduce((prev, cur) => t.binaryExpression("+", prev as t.Expression, cur as t.Expression), t.stringLiteral("")) as t.Expression));
+                    const reducer = (prev: t.Expression, cur: t.Expression) => t.binaryExpression("+", prev, cur);
+                    path.replaceWith(t.parenthesizedExpression((firstIsString ? expressions.slice(1).reduce(reducer as any, expressions[0]) : expressions.reduce(reducer as any, t.stringLiteral(""))) as t.Expression));
+                }
+            },
+            ObjectProperty(path) {
+                if (!alsoDoProps) return;
+                const node = path.node;
+                if (node.computed) return;
+                if (t.isIdentifier(node.key) && node.key.name.length > minPropLength && collector.isReplaced(node.key.name)) {
+                    node.key = collector.getReplacementExpression(node.key.name);
+                    node.computed = true as false; // STUPID
+                } else if (t.isStringLiteral(node.key) && node.key.value.length > minPropLength && collector.isReplaced(node.key.value)) {
+                    node.key = collector.getReplacementExpression(node.key.value);
+                    node.computed = true as false; // STUPID
+                }
+            },
+            MemberExpression(path) {
+                if (!alsoDoProps) return;
+                const node = path.node;
+                if (node.computed) return;
+                if (t.isIdentifier(node.property) && node.property.name.length > minPropLength && collector.isReplaced(node.property.name)) {
+                    node.property = collector.getReplacementExpression(node.property.name);
+                    node.computed = true as false; // STUPID
                 }
             }
         });

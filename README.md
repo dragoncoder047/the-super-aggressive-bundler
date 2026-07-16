@@ -26,6 +26,10 @@ rewrites `class A {}` into `var A = class {}` to get around [this Bun bug](https
 
 rewrites `() => { return X; }` into `() => X` to get around [this Bun bug](https://github.com/oven-sh/bun/issues/30654).
 
+### hoistAllFunctions
+
+hoists all `function` functions to the top of their enclosing scope, so any `var`-chaining isn't interrupted by the intervening `function`.
+
 ### inlineConstantComputedKeys
 
 rewrites `{ [X]: Y }` into `{ X: Y }` when X is a constant (number or string literal) to get around [this Bun bug](https://github.com/oven-sh/bun/issues/29487)
@@ -54,6 +58,6 @@ var x="inherit",p="default";console.log(p,p,p,p,p,p,x,p,p,x,x,x);
 
 and the more times the string is repeated, the better minification you get!
 
-## arrowFunctionRewrite
+### arrowFunctionRewrite
 
 this rewrites all your `function` functions as arrow functions wherever possible (i.e. when their bodies don't use their own name, `this`, `super`, `arguments`, or `new.target`) and then hoists them to the top if it was a declaration (preserving the normal javascript weirdness).
