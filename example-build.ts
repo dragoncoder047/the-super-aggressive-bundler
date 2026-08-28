@@ -4,7 +4,7 @@ var original!: number, transformed!: number;
 
 await pipelineBuild({
     entrypoints: ["./example.ts"],
-    minify: true,
+    minify: false,
 }, [
     async (source, sourcemap) => { original = source.length; return [source, sourcemap]; },
     babelRewrite(
@@ -15,7 +15,7 @@ await pipelineBuild({
         wellKnownInline(),
         classRewrite(),
         hoistAllFunctions()),
-    // bunMinify(),
+    bunMinify(),
     async (source, sourcemap) => { transformed = source.length; return [source, sourcemap]; },
 ]);
 

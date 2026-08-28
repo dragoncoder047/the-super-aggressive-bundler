@@ -36,9 +36,9 @@ rewrites `{ [X]: Y }` into `{ X: Y }` when X is a constant (number or string lit
 
 ### wellKnownInline
 
-takes all member expressions that get the property of a well-known builtin static namespace function, such as `Math.sqrt()` or `Array.isArray()` and copies the value out into a top-level variable so it's only spelled out once.
+takes all member expressions that get the property of a well-known builtin static namespace function or constructor, such as `Math.sqrt()` or `Array.isArray()` and copies the value out into a top-level variable so it's only spelled out once.
 
-default namespaces: `Math`, `JSON`, `Reflect`, `Object`, `Array`, `Symbol`, `Promise`, `Proxy`, `Error`, `console`
+default namespaces: `Math`, `JSON`, `Reflect`, `Object`, `Array`, `String`, `Symbol`, `Promise`, `Proxy`, `Error`, `RegExp`, `console`
 
 NOTE: this can break tools that monkey-patch things like `console.log()` to do something different with the log, since this plugin causes the module to sample the value of `console.log` and use that and ignore monkey-path updates since it no longer uses the `console` object directly.
 

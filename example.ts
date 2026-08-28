@@ -1,6 +1,6 @@
 
-const a = Math.random();
-const b = Math.random();
+const a = Math.sin(Math.random());
+const b = Math.cos(Math.random());
 
 export function main(x: any) {
     console.log("flags1", x, inner(flags1));
@@ -21,7 +21,7 @@ export function cannotBeRewrittenAsArrow1(this: any, a: any, b: any, c: any) {
 }
 export function cannotBeRewrittenAsArrow2(this: any, a: any, b: any, c: any) {
     main(a);
-    console.log(b, c, () => this.f);
+    console.log(b, c, new RegExp(RegExp.escape("123") + "|" + RegExp.escape("123")), () => this.f);
 }
 
 export class TheClass {
@@ -31,6 +31,10 @@ export class TheClass {
 enum Foo {
     bar, baz
 }
+
+// this should NOT be transformed
+// @ts-expect-error
+Foo.console.log(1);
 
 export const x = { [Foo.bar]: 1, [Foo.baz]: 2, ["hi"]: 3 };
 
