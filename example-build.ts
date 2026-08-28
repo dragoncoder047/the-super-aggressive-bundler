@@ -1,4 +1,4 @@
-import { arrowFunctionRewrite, babelRewrite, bunMinify, classRewrite, hoistAllFunctions, inlineConstantComputedKeys, pipelineBuild, stringDedupe, arrowFunctionSingle } from ".";
+import { arrowFunctionRewrite, arrowFunctionSingle, babelRewrite, bunMinify, classRewrite, hoistAllFunctions, inlineConstantComputedKeys, pipelineBuild, stringDedupe, wellKnownInline } from ".";
 
 var original!: number, transformed!: number;
 
@@ -11,10 +11,11 @@ await pipelineBuild({
         inlineConstantComputedKeys(),
         stringDedupe(),
         arrowFunctionRewrite(),
-        hoistAllFunctions(),
         arrowFunctionSingle(),
-        classRewrite()),
-    bunMinify(),
+        wellKnownInline(),
+        classRewrite(),
+        hoistAllFunctions()),
+    // bunMinify(),
     async (source, sourcemap) => { transformed = source.length; return [source, sourcemap]; },
 ]);
 

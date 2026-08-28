@@ -3,6 +3,9 @@
         "types": [
             "bun",
             "node"
+        ],
+        "lib": [
+            "ESNext"
         ]
-    }
+    },
 }

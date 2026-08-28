@@ -26,4 +26,5 @@ export * from "./classRewrite";
 export * from "./hoistAllFunctions";
 export * from "./inlineConstantComputedKeys";
 export * from "./stringDedupe";
+export * from "./wellKnownInline";
 

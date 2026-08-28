@@ -1,6 +1,6 @@
 # the-super-aggressive-bundler
 
-collection of javascript/typescript transformers to do more aggressive optimizations of your bundle using Bun.
+collection of javascript/typescript transformers to do more aggressive optimizations of your bundle using Bun and Babel.
 
 source maps are preserved, and chained using [@ampproject/remapping](https://www.npmjs.com/package/@ampproject/remapping) or Babel, so the transformations don't show up in the source map.
 
@@ -28,11 +28,19 @@ rewrites `() => { return X; }` into `() => X` to get around [this Bun bug](https
 
 ### hoistAllFunctions
 
-hoists all `function` functions to the top of their enclosing scope, so any `var`-chaining isn't interrupted by the intervening `function`.
+hoists all `function` functions to the top of their enclosing scope, so any `var`-chaining isn't interrupted by the intervening `function`. best used last.
 
 ### inlineConstantComputedKeys
 
-rewrites `{ [X]: Y }` into `{ X: Y }` when X is a constant (number or string literal) to get around [this Bun bug](https://github.com/oven-sh/bun/issues/29487)
+rewrites `{ [X]: Y }` into `{ X: Y }` when X is a constant (number or string literal) to get around [this Bun bug](https://github.com/oven-sh/bun/issues/29487).
+
+### wellKnownInline
+
+takes all member expressions that get the property of a well-known builtin static namespace function, such as `Math.sqrt()` or `Array.isArray()` and copies the value out into a top-level variable so it's only spelled out once.
+
+default namespaces: `Math`, `JSON`, `Reflect`, `Object`, `Array`, `Symbol`, `Promise`, `Proxy`, `Error`, `console`
+
+NOTE: this can break tools that monkey-patch things like `console.log()` to do something different with the log, since this plugin causes the module to sample the value of `console.log` and use that and ignore monkey-path updates since it no longer uses the `console` object directly.
 
 ### stringDedupe
 
