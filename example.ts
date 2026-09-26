@@ -1,6 +1,8 @@
 
-const a = Math.sin(Math.random());
-const b = Math.cos(Math.random());
+const sin = Math.sin, cos = Math.cos;
+
+const a = sin(Math.random());
+const b = cos(Math.random());
 
 export function main(x: any) {
     console.log("flags1", x, inner(flags1));
@@ -12,16 +14,16 @@ export function main(x: any) {
 
 export function canBeRewrittenAsArrow(a: any, b: any, c: any) {
     main(a);
-    console.log(b, c, function (this: any) { return this.f });
+    console.log(b, c, function (this: any) { return this.f instanceof c });
 }
 
 export function cannotBeRewrittenAsArrow1(this: any, a: any, b: any, c: any) {
     this.something(a);
-    console.log(b, c);
+    console.log(b, c, b instanceof c);
 }
 export function cannotBeRewrittenAsArrow2(this: any, a: any, b: any, c: any) {
     main(a);
-    console.log(b, c, new RegExp(RegExp.escape("123") + "|" + RegExp.escape("123")), () => this.f);
+    console.log(b, c, new RegExp(RegExp.escape("123") + "|" + RegExp.escape("123") + "|" + RegExp.escape("123") + "|" + RegExp.escape("123")), () => this.f);
 }
 
 export class TheClass {
@@ -43,6 +45,7 @@ export const y = { longproperty1: 1, longproperty2: 2, longproperty3: 3 };
 export const z = { "longproperty1": 1, "longproperty2": 2, "longproperty3": 3 };
 
 export function myFunction(arg: typeof y) {
+    console.log(arg instanceof TheClass);
     console.log(arg.longproperty1, arg.longproperty2 + arg.longproperty3);
 }
 

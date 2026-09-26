@@ -1,4 +1,4 @@
-import { arrowFunctionRewrite, arrowFunctionSingle, babelRewrite, bunMinify, classRewrite, hoistAllFunctions, inlineConstantComputedKeys, pipelineBuild, stringDedupe, wellKnownInline } from ".";
+import { arrowFunctionRewrite, arrowFunctionSingle, babelRewrite, bunMinify, classRewrite, hoistAllFunctions, inlineConstantComputedKeys, instanceofRewrite, pipelineBuild, stringDedupe, wellKnownInline } from ".";
 
 var original!: number, transformed!: number;
 
@@ -10,6 +10,7 @@ await pipelineBuild({
     babelRewrite(
         inlineConstantComputedKeys(),
         stringDedupe(),
+        instanceofRewrite(),
         arrowFunctionRewrite(),
         arrowFunctionSingle(),
         wellKnownInline(),

@@ -18,6 +18,10 @@ for the general idea, see [example-build.ts](./example-build.ts).
 
 just minifies the output again using Bun - useful to be used after other optimizers.
 
+### instanceof
+
+rewrites all `x instanceof y` calls to a single `isinstance(x, y)` call (where `const isinstance = (x, y) => x instanceof y`) so that the very long `instanceof` operator only appears once.
+
 ### classRewrite
 
 rewrites `class A {}` into `var A = class {}` to get around [this Bun bug](https://github.com/oven-sh/bun/issues/32652).
@@ -25,10 +29,6 @@ rewrites `class A {}` into `var A = class {}` to get around [this Bun bug](https
 ### arrowFunctionSingle
 
 rewrites `() => { return X; }` into `() => X` to get around [this Bun bug](https://github.com/oven-sh/bun/issues/30654).
-
-### hoistAllFunctions
-
-hoists all `function` functions to the top of their enclosing scope, so any `var`-chaining isn't interrupted by the intervening `function`. best used last.
 
 ### inlineConstantComputedKeys
 
@@ -69,3 +69,7 @@ and the more times the string is repeated, the better minification you get!
 ### arrowFunctionRewrite
 
 this rewrites all your `function` functions as arrow functions wherever possible (i.e. when their bodies don't use their own name, `this`, `super`, `arguments`, or `new.target`) and then hoists them to the top if it was a declaration (preserving the normal javascript weirdness).
+
+### hoistAllFunctions
+
+hoists all `function` functions to the top of their enclosing scope, so any `var`-chaining isn't interrupted by the intervening `function`. best used last.
