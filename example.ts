@@ -59,3 +59,17 @@ export const str1 = String.raw`foo${a}bar${b}bam`;
 export const str2 = `foo${a}bar${b}bam`;
 export const flags1 = ["default", "default", "default", "default", "default", "default", "inherit", "default", "default", "inherit", "inherit", "inherit"];
 export const flags2 = ["foo", "bar", "foo", "bam", "foo", "bar", "foo", "bam"];
+
+console.log(function () {
+    return { a: 1, b: 2, c: 3 }
+});
+
+console.log({
+    name: "foo",
+    args: ["bar", "baz", "bam"],
+    // purposefully repetitive to demonstrate
+    doc: `.desc This hook implements foo
+    .param bar - required - 123 is special!
+    .param baz - default value is whatever is inherited from [[bam]]
+    .param bam - this hook inherits a lot`,
+});
