@@ -3,8 +3,9 @@ import * as t from "@babel/types";
 import { BabelRewriter } from ".";
 
 export function arrowFunctionRewrite(): BabelRewriter {
-    return ast => {
-
+    return (ast, verbose) => {
+        var count = 0, hoisted = 0;
+        if (verbose) console.log("starting arrowFunctionRewrite");
         traverse(ast, {
             FunctionDeclaration(path) {
                 if (!canConvertFunctionDeclaration(path)) return;
@@ -12,6 +13,8 @@ export function arrowFunctionRewrite(): BabelRewriter {
                 const arrow = t.arrowFunctionExpression(params, body, isAsync);
                 const decl = t.variableDeclaration("var", [t.variableDeclarator(id!, arrow)]);
                 // Hoist to top
+                hoisted++;
+                count++;
                 path.remove();
                 (path.findParent(p => p.isBlockStatement() || p.isProgram()) as NodePath<t.BlockStatement | t.Program>).unshiftContainer("body", decl);
             },
@@ -20,9 +23,11 @@ export function arrowFunctionRewrite(): BabelRewriter {
                 const { params, body, async: isAsync } = path.node;
                 const arrow = t.arrowFunctionExpression(params, body, isAsync);
                 path.replaceWith(arrow);
+                count++;
             },
         })
 
+        if (verbose) console.log("finished arrowFunctionRewrite by rewriting", count, "functions,", hoisted, "of which were function declarations");
         return ast;
     }
 }

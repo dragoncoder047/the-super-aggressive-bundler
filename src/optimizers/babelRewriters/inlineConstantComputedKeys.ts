@@ -3,8 +3,10 @@ import * as t from "@babel/types";
 import { BabelRewriter } from ".";
 
 export function inlineConstantComputedKeys(): BabelRewriter {
-    return ast => {
+    return (ast, verbose) => {
 
+        if (verbose) console.log("starting inlineConstantComputedKeys");
+        var count = 0;
         traverse(ast, {
             ObjectProperty(path) {
                 const prop = path.node;
@@ -30,9 +32,12 @@ export function inlineConstantComputedKeys(): BabelRewriter {
                 if (newKey) {
                     prop.key = newKey;
                     prop.computed = false as true; // STUPID!
+                    count++;
                 }
             }
         });
+
+        if (verbose) console.log("finished inlineConstantComputedKeys by inlining", count, "keys");
 
         return ast;
     }

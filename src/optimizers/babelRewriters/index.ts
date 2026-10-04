@@ -2,13 +2,15 @@ import generate from "@babel/generator";
 import * as babel from "@babel/parser";
 import * as t from "@babel/types";
 import { PipelineStage } from "../../types";
-export type BabelRewriter = (ast: t.File) => t.File;
+export type BabelRewriter = (ast: t.File, verbose: boolean) => t.File;
 
 export function babelRewrite(...rewriters: BabelRewriter[]): PipelineStage {
-    return async (source, sourcemap) => {
+    return async (source, sourcemap, verbose) => {
         var ast = babel.parse(source, { sourceType: "module" }) as t.File;
 
-        for (var rewriter of rewriters) ast = rewriter(ast);
+        for (var rewriter of rewriters) {
+            ast = rewriter(ast, verbose);
+        }
 
         const { code, map } = generate(ast, {
             sourceMaps: true,

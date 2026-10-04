@@ -3,8 +3,10 @@ import * as t from "@babel/types";
 import { BabelRewriter } from ".";
 
 export function arrowFunctionSingle(): BabelRewriter {
-    return ast => {
+    return (ast, verbose) => {
 
+        var count = 0;
+        if (verbose) console.log("starting arrowFunctionSingle");
         traverse(ast, {
             ArrowFunctionExpression(path) {
                 const node = path.node;
@@ -12,9 +14,11 @@ export function arrowFunctionSingle(): BabelRewriter {
                 if (!retArg) return;
                 const { params, async: isAsync } = path.node;
                 path.replaceWith(t.arrowFunctionExpression(params, retArg, isAsync));
+                count++;
             }
         });
 
+        if (verbose) console.log("finished arrowFunctionSingle by fixing", count, "functions");
         return ast;
     }
 }

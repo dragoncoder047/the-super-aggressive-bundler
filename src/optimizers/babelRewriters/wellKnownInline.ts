@@ -12,8 +12,8 @@ export interface WellKnownInlineOptions {
  */
 export function wellKnownInline(options: WellKnownInlineOptions = {}): BabelRewriter {
     const names = options.names ?? ["Math", "JSON", "Reflect", "Object", "Array", "String", "Symbol", "Promise", "Proxy", "Error", "RegExp", "console"];
-    return ast => {
-
+    return (ast, verbose) => {
+        if (verbose) console.log("starting wellKnownInline");
         const mangleMemberMap = new Map<`${string}.${string}`, string>();
         const mangleIdentifierMap = new Map<string, string>();
         const seenMember = new Set<t.MemberExpression>();
@@ -37,6 +37,7 @@ export function wellKnownInline(options: WellKnownInlineOptions = {}): BabelRewr
             });
         };
         for (var name of names) {
+            if (verbose) console.log("inlining", name);
             var memberCount = 0, directCount = 0;
             traverse(ast, {
                 MemberExpression(path) {
@@ -48,6 +49,7 @@ export function wellKnownInline(options: WellKnownInlineOptions = {}): BabelRewr
                 }
             });
             if (memberCount > 1) {
+                if (verbose) console.log("found", memberCount, "references to properties of", name);
                 traverse(ast, {
                     MemberExpression(path) {
                         if (seenMember.has(path.node)) return;
@@ -68,6 +70,7 @@ export function wellKnownInline(options: WellKnownInlineOptions = {}): BabelRewr
                 },
             });
             if (directCount > 1) {
+                if (verbose) console.log("found", memberCount, "direct references to", name);
                 traverse(ast, {
                     Identifier(path) {
                         const { parent, node, scope } = path;
@@ -80,6 +83,7 @@ export function wellKnownInline(options: WellKnownInlineOptions = {}): BabelRewr
             }
         }
 
+        if (verbose) console.log("finished wellKnownInline");
         return ast;
     }
 }

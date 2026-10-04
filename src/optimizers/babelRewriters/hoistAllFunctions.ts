@@ -3,8 +3,9 @@ import * as t from "@babel/types";
 import { BabelRewriter } from ".";
 
 export function hoistAllFunctions(): BabelRewriter {
-    return ast => {
+    return (ast, verbose) => {
 
+        if (verbose) console.log("starting hoistAllFunctions");
         const blocksToFunctions = new Map<NodePath<t.BlockStatement | t.Program>, t.FunctionDeclaration[]>();
 
         traverse(ast, {
@@ -16,13 +17,15 @@ export function hoistAllFunctions(): BabelRewriter {
                 path.remove();
             }
         });
-
+        var count = 0;
         for (var [blockPath, fns] of blocksToFunctions) {
             for (var fn of fns) {
                 blockPath.unshiftContainer("body", fn);
+                count++;
             }
         }
 
+        if (verbose) console.log("finished hoistAllFunctions by hoisting", count, "functions");
         return ast;
     }
 }

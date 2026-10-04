@@ -4,8 +4,9 @@ import { BabelRewriter } from ".";
 
 export function instanceofRewrite(): BabelRewriter {
     const instanceofName = "__instanceof_" + Math.random().toString(36).slice(2, 10);
-    return ast => {
+    return (ast, verbose) => {
         var count = 0;
+        if (verbose) console.log("starting instanceofRewrite");
         traverse(ast, {
             BinaryExpression(path) {
                 if (path.node.operator === "instanceof") {
@@ -13,7 +14,10 @@ export function instanceofRewrite(): BabelRewriter {
                 }
             },
         });
-        if (count < 2) return ast;
+        if (count < 2) {
+            if (verbose) console.log("finished instanceofRewrite with only", count, "instanceof expressions, nothing was done");
+            return ast;
+        }
         traverse(ast, {
             BinaryExpression(path) {
                 const { node: { operator, left, right } } = path;
@@ -29,6 +33,7 @@ export function instanceofRewrite(): BabelRewriter {
             },
         });
 
+        if (verbose) console.log("finished instanceofRewrite by rewriting", count, "instanceof expressions as a function call");
         return ast;
     }
 }

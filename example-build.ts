@@ -5,11 +5,12 @@ var original!: number, transformed!: number;
 await pipelineBuild({
     entrypoints: ["./example.ts"],
     minify: false,
+    verbose: true,
 }, [
     async (source, sourcemap) => { original = source.length; return [source, sourcemap]; },
     babelRewrite(
         inlineConstantComputedKeys(),
-        stringDedupe(),
+        stringDedupe({ minimumRepeat: 1 }),
         instanceofRewrite(),
         arrowFunctionRewrite(),
         arrowFunctionSingle(),
