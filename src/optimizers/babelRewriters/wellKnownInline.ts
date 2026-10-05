@@ -1,6 +1,7 @@
 import traverse, { NodePath } from "@babel/traverse";
 import * as t from "@babel/types";
 import { BabelRewriter } from ".";
+import { zish } from "../../utils";
 
 export interface WellKnownInlineOptions {
     names?: string[];
@@ -20,7 +21,7 @@ export function wellKnownInline(options: WellKnownInlineOptions = {}): BabelRewr
         const seenIdentifier = new Set<t.Identifier>();
         const mangleMember = (ns: string, id: string, node: NodePath<any>) => {
             return mangleMemberMap.getOrInsertComputed(`${ns}.${id}`, () => {
-                const s = `__${ns}_${id}_${Math.random().toString(36).slice(2, 10)}`;
+                const s = `__${ns}_${id}_${zish()}`;
                 const memberExpression = t.memberExpression(t.identifier(ns), t.identifier(id));
                 seenMember.add(memberExpression);
                 (node.findParent(p => p.isProgram()) as any as NodePath<t.Program>).unshiftContainer("body", t.variableDeclaration("var", [t.variableDeclarator(t.identifier(s), memberExpression)]));
@@ -29,7 +30,7 @@ export function wellKnownInline(options: WellKnownInlineOptions = {}): BabelRewr
         };
         const mangleBareIdentifier = (id: string, node: NodePath<any>) => {
             return mangleIdentifierMap.getOrInsertComputed(id, () => {
-                const s = `__${id}_${Math.random().toString(36).slice(2, 10)}`;
+                const s = `__${id}_${zish()}`;
                 const realId = t.identifier(id);
                 seenIdentifier.add(realId);
                 (node.findParent(p => p.isProgram()) as any as NodePath<t.Program>).unshiftContainer("body", t.variableDeclaration("var", [t.variableDeclarator(t.identifier(s), realId)]));

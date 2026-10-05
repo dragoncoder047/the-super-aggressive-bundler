@@ -1,9 +1,10 @@
 import traverse from "@babel/traverse";
 import * as t from "@babel/types";
 import { BabelRewriter } from ".";
+import { zish } from "../../utils";
 
 export function instanceofRewrite(): BabelRewriter {
-    const instanceofName = "__instanceof_" + Math.random().toString(36).slice(2, 10);
+    const instanceofName = "__instanceof" + zish();
     return (ast, verbose) => {
         var count = 0;
         if (verbose) console.log("starting instanceofRewrite");

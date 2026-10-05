@@ -1,6 +1,7 @@
 import traverse from "@babel/traverse";
 import * as t from "@babel/types";
 import { BabelRewriter } from ".";
+import { zish } from "../../utils";
 
 export interface StringDedupeOptions {
     /**
@@ -214,7 +215,7 @@ function splitLiteral(text: string, needle: string): Part[] {
     return parts;
 }
 
-/*
+/**
  * Safety cap for candidate enumeration: enumerating every substring of a
  * chunk is quadratic in the chunk length, so absurdly long literals (embedded
  * data blobs and the like) only contribute substrings up to this length.
@@ -223,7 +224,7 @@ function splitLiteral(text: string, needle: string): Part[] {
  */
 const MAX_SUBSTRING_LENGTH = 512;
 
-/*
+/**
  * The assumed size of one variable reference for all benefit/cost
  * estimates in this pass. See expressionCost().
  */
@@ -434,7 +435,7 @@ class StringTableCollector {
      */
     benefit(text: string, refs: number): number | null {
         const isVar = this.varStrings.has(text);
-        const benefit = refs * text.length - (isVar ? 0 : text.length + 3);
+        const benefit = refs * text.length - (isVar ? 0 : text.length + REFERENCE_COST);
         if (benefit <= this.aggressiveBenefitThreshold) return null;
         if (!isVar && refs < this.minCount) return null;
         return benefit;
@@ -445,7 +446,7 @@ class StringTableCollector {
         var embedded = 0;
         for (var owner of owners) {
             if (owner === text) continue; // a string never counts as a use of itself
-            if (text.length >= owner.length) continue; // strictly-shorter rule (cycle protection)
+            if (text.length >= owner.length) continue; // strictly-longer owners only to help avoid creating cycles
             const parts = this.representations.get(owner);
             if (!parts) continue;
             const weight = this.ownerWeight(owner);
@@ -603,7 +604,7 @@ class StringTableCollector {
                 continue;
             }
             this.orderedVars = order;
-            if (!changed) return;
+            if (!changed) break;
         }
         // Guard exhausted (also unreachable in practice): fall back to
         // whatever acyclic prefix Kahn produced rather than nothing.
@@ -666,8 +667,6 @@ class StringTableCollector {
         const toExpr = (part: Part): t.Expression =>
             part[0]
                 ? t.stringLiteral(part[1])
-                // Fresh identifier on every call: sharing one Babel node
-                // between several places in the AST corrupts traversals.
                 : t.identifier(this.varNames.get(part[1])!);
         return merged.slice(1).reduce<t.Expression>(
             (prev, part) => t.binaryExpression("+", prev, toExpr(part)),
@@ -708,8 +707,5 @@ class StringTableCollector {
 
 function toVarName(i: number, str: string): string {
     if (i < 0) throw Error("i < 0");
-    return "__string" + i + "_" + (str
-        .slice(0, 30)
-        .replace(/[^a-zA-Z0-9_]/g, "_")
-        .replace(/^([0-9])/, "_$1")) + "_" + Math.random().toString(36).slice(2, 10);
+    return "__string" + i + str.replace(/[^a-zA-Z0-9_]/g, "_") + zish();
 }
