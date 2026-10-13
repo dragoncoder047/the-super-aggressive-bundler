@@ -28,7 +28,7 @@ rewrites `class A {}` into `var A = class {}` to get around [this Bun bug](https
 
 ### arrowFunctionSingle
 
-rewrites `() => { return X; }` into `() => X` to get around [this Bun bug](https://github.com/oven-sh/bun/issues/30654).
+rewrites `() => { return X; }` into `() => X` to get around [this Bun bug](https://github.com/oven-sh/bun/issues/31722).
 
 ### inlineConstantComputedKeys
 
