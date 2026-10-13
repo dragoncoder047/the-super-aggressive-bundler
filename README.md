@@ -26,10 +26,6 @@ rewrites all `x instanceof y` calls to a single `isinstance(x, y)` call (where `
 
 rewrites `class A {}` into `var A = class {}` to get around [this Bun bug](https://github.com/oven-sh/bun/issues/32652).
 
-### arrowFunctionSingle
-
-rewrites `() => { return X; }` into `() => X` to get around [this Bun bug](https://github.com/oven-sh/bun/issues/31722).
-
 ### inlineConstantComputedKeys
 
 rewrites `{ [X]: Y }` into `{ X: Y }` when X is a constant (number or string literal) to get around [this Bun bug](https://github.com/oven-sh/bun/issues/29487).

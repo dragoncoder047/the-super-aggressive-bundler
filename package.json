@@ -9,14 +9,14 @@
     "license": "AGPL-3.0-only",
     "type": "module",
     "devDependencies": {
-        "@types/bun": "^1.4.2",
-        "@types/node": "^26.6.3"
+        "@types/bun": "^1.4.3",
+        "@types/node": "^26.6.5"
     },
     "dependencies": {
         "@ampproject/remapping": "^2.3.0",
         "@babel/generator": "^8.0.6",
-        "@babel/parser": "^8.0.4",
-        "@babel/traverse": "^8.0.6",
+        "@babel/parser": "^8.0.7",
+        "@babel/traverse": "^8.0.7",
         "@babel/types": "^8.0.6"
     }
 }
