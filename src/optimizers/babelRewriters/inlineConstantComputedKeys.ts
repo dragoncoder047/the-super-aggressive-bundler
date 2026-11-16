@@ -4,7 +4,6 @@ import { BabelRewriter } from ".";
 
 export function inlineConstantComputedKeys(): BabelRewriter {
     return (ast, verbose) => {
-
         if (verbose) console.log("starting inlineConstantComputedKeys");
         var count = 0;
         traverse(ast, {
@@ -17,16 +16,18 @@ export function inlineConstantComputedKeys(): BabelRewriter {
                     newKey = t.isValidIdentifier(prop.key.value)
                         ? t.identifier(prop.key.value)
                         : t.stringLiteral(prop.key.value);
-                }
-                else if (t.isBigIntLiteral(prop.key)) {
+                } else if (t.isBigIntLiteral(prop.key)) {
                     newKey = t.stringLiteral(prop.key.value.toString());
-                }
-                else if (t.isNumericLiteral(prop.key)) {
+                } else if (t.isNumericLiteral(prop.key)) {
                     newKey = t.numericLiteral(prop.key.value);
-                }
-                else if (t.isTemplateLiteral(prop.key) && prop.key.expressions.length === 0) {
+                } else if (
+                    t.isTemplateLiteral(prop.key) &&
+                    prop.key.expressions.length === 0
+                ) {
                     const cooked = prop.key.quasis[0].value.cooked!;
-                    newKey = t.isValidIdentifier(cooked) ? t.identifier(cooked) : t.stringLiteral(cooked);
+                    newKey = t.isValidIdentifier(cooked)
+                        ? t.identifier(cooked)
+                        : t.stringLiteral(cooked);
                 }
 
                 if (newKey) {
@@ -34,12 +35,16 @@ export function inlineConstantComputedKeys(): BabelRewriter {
                     prop.computed = false as true; // STUPID!
                     count++;
                 }
-            }
+            },
         });
 
-        if (verbose) console.log("finished inlineConstantComputedKeys by inlining", count, "keys");
+        if (verbose)
+            console.log(
+                "finished inlineConstantComputedKeys by inlining",
+                count,
+                "keys",
+            );
 
         return ast;
-    }
+    };
 }
-

@@ -4,19 +4,26 @@ import { BabelRewriter } from ".";
 
 export function arrowFunctionRewrite(): BabelRewriter {
     return (ast, verbose) => {
-        var count = 0, hoisted = 0;
+        var count = 0,
+            hoisted = 0;
         if (verbose) console.log("starting arrowFunctionRewrite");
         traverse(ast, {
             FunctionDeclaration(path) {
                 if (!canConvertFunctionDeclaration(path)) return;
                 const { id, params, body, async: isAsync } = path.node;
                 const arrow = t.arrowFunctionExpression(params, body, isAsync);
-                const decl = t.variableDeclaration("var", [t.variableDeclarator(id!, arrow)]);
+                const decl = t.variableDeclaration("var", [
+                    t.variableDeclarator(id!, arrow),
+                ]);
                 // Hoist to top
                 hoisted++;
                 count++;
                 path.remove();
-                (path.findParent(p => p.isBlockStatement() || p.isProgram()) as NodePath<t.BlockStatement | t.Program>).unshiftContainer("body", decl);
+                (
+                    path.findParent(
+                        (p) => p.isBlockStatement() || p.isProgram(),
+                    ) as NodePath<t.BlockStatement | t.Program>
+                ).unshiftContainer("body", decl);
             },
             FunctionExpression(path) {
                 if (!canConvertFunctionExpression(path)) return;
@@ -25,21 +32,32 @@ export function arrowFunctionRewrite(): BabelRewriter {
                 path.replaceWith(arrow);
                 count++;
             },
-        })
+        });
 
-        if (verbose) console.log("finished arrowFunctionRewrite by rewriting", count, "functions,", hoisted, "of which were function declarations");
+        if (verbose)
+            console.log(
+                "finished arrowFunctionRewrite by rewriting",
+                count,
+                "functions,",
+                hoisted,
+                "of which were function declarations",
+            );
         return ast;
-    }
+    };
 }
 
-function canConvertFunctionDeclaration(path: NodePath<t.FunctionDeclaration>): boolean {
+function canConvertFunctionDeclaration(
+    path: NodePath<t.FunctionDeclaration>,
+): boolean {
     const node = path.node;
     if (node.generator) return false;
     if (hasUnsafeThis(path)) return false;
     return true;
 }
 
-function canConvertFunctionExpression(path: NodePath<t.FunctionExpression>): boolean {
+function canConvertFunctionExpression(
+    path: NodePath<t.FunctionExpression>,
+): boolean {
     const node = path.node;
     if (node.generator) return false;
     if (hasUnsafeThis(path)) return false;
@@ -51,11 +69,15 @@ function canConvertFunctionExpression(path: NodePath<t.FunctionExpression>): boo
         var usesOwnName = false;
         path.traverse({
             Identifier(inner) {
-                if (inner.node.name === node.id!.name && inner.scope.getBinding(node.id!.name) === innerBinding
+                if (
+                    inner.node.name === node.id!.name &&
+                    inner.scope.getBinding(node.id!.name) === innerBinding &&
                     // ignore the declaration itself
-                    && inner.node !== node.id) usesOwnName = true;
-            }
-        })
+                    inner.node !== node.id
+                )
+                    usesOwnName = true;
+            },
+        });
         if (usesOwnName) return false;
     }
     return true;
@@ -72,12 +94,19 @@ function hasUnsafeThis(funcPath: NodePath<any>): boolean {
             unsafe = true;
         },
         MetaProperty(path) {
-            if (path.node.meta.name === "new" && path.node.property.name === "target") unsafe = true;
+            if (
+                path.node.meta.name === "new" &&
+                path.node.property.name === "target"
+            )
+                unsafe = true;
         },
         Identifier(path) {
-            if (path.node.name === "arguments" && !path.scope.hasBinding("arguments")) unsafe = true;
-        }
-    })
+            if (
+                path.node.name === "arguments" &&
+                !path.scope.hasBinding("arguments")
+            )
+                unsafe = true;
+        },
+    });
     return unsafe;
 }
-

@@ -12,14 +12,18 @@ export function babelRewrite(...rewriters: BabelRewriter[]): PipelineStage {
             ast = rewriter(ast, verbose);
         }
 
-        const { code, map } = generate(ast, {
-            sourceMaps: true,
-            sourceFileName: "foo.js",
-            inputSourceMap: sourcemap,
-        }, source);
+        const { code, map } = generate(
+            ast,
+            {
+                sourceMaps: true,
+                sourceFileName: "foo.js",
+                inputSourceMap: sourcemap,
+            },
+            source,
+        );
 
         return [code, JSON.stringify(map)];
-    }
+    };
 }
 
 export * from "./arrowFunctionRewrite";
@@ -28,5 +32,5 @@ export * from "./hoistAllFunctions";
 export * from "./inlineConstantComputedKeys";
 export * from "./instanceof";
 export * from "./stringDedupe";
+export * from "./typeof";
 export * from "./wellKnownInline";
-

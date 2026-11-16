@@ -11,12 +11,20 @@ export function classRewrite(): BabelRewriter {
                 const node = path.node as t.ClassDeclaration;
                 if (!node.id) return;
                 const { id, body, superClass, decorators } = node;
-                path.replaceWith(t.variableDeclaration("var", [t.variableDeclarator(id, t.classExpression(id, superClass, body, decorators))]))
+                path.replaceWith(
+                    t.variableDeclaration("var", [
+                        t.variableDeclarator(
+                            id,
+                            t.classExpression(id, superClass, body, decorators),
+                        ),
+                    ]),
+                );
                 count++;
-            }
+            },
         });
 
-        if (verbose) console.log("finished classRewrite by fixing", count, "classes"); 
+        if (verbose)
+            console.log("finished classRewrite by fixing", count, "classes");
         return ast;
-    }
+    };
 }

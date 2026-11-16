@@ -10,7 +10,13 @@ export function bunMinify(): PipelineStage {
             format: "esm",
             files: { ["__file__.js"]: contents },
         });
-        const stuff = await Promise.all([result.outputs[0].text(), result.outputs[1].text()]);
-        return [stuff[0], JSON.stringify(remapping([stuff[1], sourcemap], () => null))];
-    }
+        const stuff = await Promise.all([
+            result.outputs[0].text(),
+            result.outputs[1].text(),
+        ]);
+        return [
+            stuff[0],
+            JSON.stringify(remapping([stuff[1], sourcemap], () => null)),
+        ];
+    };
 }

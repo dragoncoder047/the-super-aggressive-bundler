@@ -5,33 +5,44 @@ import { zish } from "../../utils";
 
 export interface StringDedupeOptions {
     /**
-     * The minimum number of times a string must be seen in the module before it will be put in the string table.
+     * The minimum number of times a string must be seen in the module before it
+     * will be put in the string table.
+     *
      * @default 3
      */
     minimumRepeat?: number;
     /**
-     * Whether to treat property accesses as strings and replace them with a bracket access if that string gets replaced.
-     * Useful when minifying codebases with lots of long property names, but carries a significant performance penalty.
+     * Whether to treat property accesses as strings and replace them with a
+     * bracket access if that string gets replaced. Useful when minifying
+     * codebases with lots of long property names, but carries a significant
+     * performance penalty.
+     *
      * @default false
      */
     includeProperties?: boolean;
     /**
-     * Minimum length of a property for it to be considered for replacement if {@link includeProperties} is true.
+     * Minimum length of a property for it to be considered for replacement if
+     * {@link includeProperties} is true.
+     *
      * @default 5
      */
     propertyMinimumLength?: number;
     /**
-     * Splits strings into repeated substrings and then concatenates them at runtime.
+     * Splits strings into repeated substrings and then concatenates them at
+     * runtime.
+     *
      * @default true
      */
     aggressiveSplitting?: boolean;
     /**
      * Minimum length of substring to consider for extraction.
+     *
      * @default 2
      */
     aggressiveMinLength?: number;
     /**
      * Stop extracting substrings when benefit falls below this threshold.
+     *
      * @default 5
      */
     aggressiveBenefitThreshold?: number;
@@ -51,7 +62,11 @@ export function stringDedupe(options: StringDedupeOptions = {}): BabelRewriter {
         // first pass: find all the strings
         traverse(ast, {
             StringLiteral(path) {
-                if (t.isImportDeclaration(path.parent) || t.isImportSpecifier(path.parent)) return;
+                if (
+                    t.isImportDeclaration(path.parent) ||
+                    t.isImportSpecifier(path.parent)
+                )
+                    return;
                 collector.add(path.node.value);
             },
             TemplateLiteral(path) {
@@ -66,25 +81,40 @@ export function stringDedupe(options: StringDedupeOptions = {}): BabelRewriter {
                 if (!alsoDoProps) return;
                 const { key, computed } = path.node;
                 if (computed) return;
-                if (t.isIdentifier(key) && key.name.length > minPropLength) collector.add(key.name);
-                if (t.isStringLiteral(key) && key.value.length > minPropLength) collector.add(key.value);
+                if (t.isIdentifier(key) && key.name.length > minPropLength)
+                    collector.add(key.name);
+                if (t.isStringLiteral(key) && key.value.length > minPropLength)
+                    collector.add(key.value);
             },
             MemberExpression(path) {
                 if (!alsoDoProps) return;
                 const { property, computed } = path.node;
                 if (computed) return;
-                if (t.isIdentifier(property) && property.name.length > minPropLength) collector.add(property.name);
-            }
+                if (
+                    t.isIdentifier(property) &&
+                    property.name.length > minPropLength
+                )
+                    collector.add(property.name);
+            },
         });
 
-        if (verbose) console.log("found", new Set(collector.seenStrings).size, "unique strings");
+        if (verbose)
+            console.log(
+                "found",
+                new Set(collector.seenStrings).size,
+                "unique strings",
+            );
         collector.computeExpressions(verbose);
 
         // second pass: replace the strings
         if (verbose) console.log("Replacing strings with expressions");
         traverse(ast, {
             StringLiteral(path) {
-                if (t.isImportDeclaration(path.parent) || t.isImportSpecifier(path.parent)) return;
+                if (
+                    t.isImportDeclaration(path.parent) ||
+                    t.isImportSpecifier(path.parent)
+                )
+                    return;
                 const str = path.node.value;
                 const expr = collector.getReplacementExpression(str);
                 if (expr) {
@@ -112,32 +142,60 @@ export function stringDedupe(options: StringDedupeOptions = {}): BabelRewriter {
                     const raw = quasis[i].value.cooked ?? quasis[i].value.raw;
                     const expr = collector.getReplacementExpression(raw);
                     if (expr && raw.length > 0) {
-                        quasis.splice(i, 1,
+                        quasis.splice(
+                            i,
+                            1,
                             t.templateElement({ cooked: "", raw: "" }, false),
-                            t.templateElement({ cooked: "", raw: "" }, i === expressions.length));
+                            t.templateElement(
+                                { cooked: "", raw: "" },
+                                i === expressions.length,
+                            ),
+                        );
                         expressions.splice(i, 0, expr);
                         if (i === 0) firstIsString = true;
                         i++;
                     }
                 }
                 // if it's all quasis, with no string chunks left, make it a plus expression
-                if (quasis.every(quasi => quasi.value.cooked === "")) {
-                    const reducer = (prev: t.Expression, cur: t.Expression) => t.binaryExpression("+", prev, cur);
-                    path.replaceWith(t.parenthesizedExpression((firstIsString ? expressions.slice(1).reduce(reducer as any, expressions[0]) : expressions.reduce(reducer as any, t.stringLiteral(""))) as t.Expression));
+                if (quasis.every((quasi) => quasi.value.cooked === "")) {
+                    const reducer = (prev: t.Expression, cur: t.Expression) =>
+                        t.binaryExpression("+", prev, cur);
+                    path.replaceWith(
+                        t.parenthesizedExpression(
+                            (firstIsString
+                                ? expressions
+                                      .slice(1)
+                                      .reduce(reducer as any, expressions[0])
+                                : expressions.reduce(
+                                      reducer as any,
+                                      t.stringLiteral(""),
+                                  )) as t.Expression,
+                        ),
+                    );
                 }
             },
             ObjectProperty(path) {
                 if (!alsoDoProps) return;
                 const node = path.node;
                 if (node.computed) return;
-                if (t.isIdentifier(node.key) && node.key.name.length > minPropLength) {
-                    const expr = collector.getReplacementExpression(node.key.name);
+                if (
+                    t.isIdentifier(node.key) &&
+                    node.key.name.length > minPropLength
+                ) {
+                    const expr = collector.getReplacementExpression(
+                        node.key.name,
+                    );
                     if (expr) {
                         node.key = expr as any;
                         node.computed = true as false; // STUPID
                     }
-                } else if (t.isStringLiteral(node.key) && node.key.value.length > minPropLength) {
-                    const expr = collector.getReplacementExpression(node.key.value);
+                } else if (
+                    t.isStringLiteral(node.key) &&
+                    node.key.value.length > minPropLength
+                ) {
+                    const expr = collector.getReplacementExpression(
+                        node.key.value,
+                    );
                     if (expr) {
                         node.key = expr as any;
                         node.computed = true as false; // STUPID
@@ -148,24 +206,30 @@ export function stringDedupe(options: StringDedupeOptions = {}): BabelRewriter {
                 if (!alsoDoProps) return;
                 const node = path.node;
                 if (node.computed) return;
-                if (t.isIdentifier(node.property) && node.property.name.length > minPropLength) {
-                    const expr = collector.getReplacementExpression(node.property.name);
+                if (
+                    t.isIdentifier(node.property) &&
+                    node.property.name.length > minPropLength
+                ) {
+                    const expr = collector.getReplacementExpression(
+                        node.property.name,
+                    );
                     if (expr) {
                         node.property = expr as any;
                         node.computed = true as false; // STUPID
                     }
                 }
-            }
+            },
         });
 
         // third: insert variables
         if (verbose) console.log("Inserting variables");
         const vars = collector.getAllVars();
-        if (vars.declarations.length) ast.program.body.splice(0, 0, vars as any);
+        if (vars.declarations.length)
+            ast.program.body.splice(0, 0, vars as any);
 
         if (verbose) console.log("finished stringDedupe");
         return ast;
-    }
+    };
 }
 
 type Part = [isLit: boolean, text: string];
@@ -216,17 +280,17 @@ function splitLiteral(text: string, needle: string): Part[] {
 }
 
 /**
- * Safety cap for candidate enumeration: enumerating every substring of a
- * chunk is quadratic in the chunk length, so absurdly long literals (embedded
- * data blobs and the like) only contribute substrings up to this length.
- * Anything repeated at a longer scale contains repeated substrings well
- * under the cap, so this does not meaningfully limit real deduping.
+ * Safety cap for candidate enumeration: enumerating every substring of a chunk
+ * is quadratic in the chunk length, so absurdly long literals (embedded data
+ * blobs and the like) only contribute substrings up to this length. Anything
+ * repeated at a longer scale contains repeated substrings well under the cap,
+ * so this does not meaningfully limit real deduping.
  */
 const MAX_SUBSTRING_LENGTH = 512;
 
 /**
- * The assumed size of one variable reference for all benefit/cost
- * estimates in this pass. See expressionCost().
+ * The assumed size of one variable reference for all benefit/cost estimates in
+ * this pass. See expressionCost().
  */
 const REFERENCE_COST = 3;
 
@@ -234,14 +298,17 @@ class StringTableCollector {
     seenStrings: string[] = [];
     /** How many times each distinct string was seen in the source. */
     counts = new Map<string, number>();
-    /** string -> how it is built out of literal chunks and variable references */
+    /** String -> how it is built out of literal chunks and variable references */
     representations = new Map<string, Part[]>();
     /** Strings that own a variable in the output. */
     varStrings = new Set<string>();
-    /** string -> name of its output variable */
+    /** String -> name of its output variable */
     varNames = new Map<string, string>();
     nextVarIndex = 0;
-    /** varStrings in dependency (Kahn) order: every variable after all the variables it references. */
+    /**
+     * VarStrings in dependency (Kahn) order: every variable after all the
+     * variables it references.
+     */
     orderedVars: string[] = [];
 
     constructor(
@@ -249,7 +316,7 @@ class StringTableCollector {
         public aggressiveMinLength: number,
         public aggressiveBenefitThreshold: number,
         public aggressiveSplitting: boolean,
-    ) { }
+    ) {}
 
     add(string: string) {
         this.seenStrings.push(string);
@@ -287,14 +354,21 @@ class StringTableCollector {
                 n++;
             }
         }
-        if (verbose) console.log("found", n, "strings that occurred more than", this.minCount, "times to be replaced");
+        if (verbose)
+            console.log(
+                "found",
+                n,
+                "strings that occurred more than",
+                this.minCount,
+                "times to be replaced",
+            );
     }
 
     /**
      * How many times the representation of `owner` is materialized in the
-     * output. A variable's definition is emitted exactly once; a string
-     * without a variable is inlined at every use site, so its parts are
-     * emitted once per occurrence in the source.
+     * output. A variable's definition is emitted exactly once; a string without
+     * a variable is inlined at every use site, so its parts are emitted once
+     * per occurrence in the source.
      */
     ownerWeight(owner: string): number {
         if (this.varStrings.has(owner)) return 1;
@@ -327,23 +401,31 @@ class StringTableCollector {
             // under-used variable into the output.
             const viable: { text: string; benefit: number }[] = [];
             for (var [text, estimated] of candidates) {
-                const refs = estimated + (this.varStrings.has(text) ? 0 : (this.counts.get(text) ?? 0));
+                const refs =
+                    estimated +
+                    (this.varStrings.has(text)
+                        ? 0
+                        : (this.counts.get(text) ?? 0));
                 const benefit = this.benefit(text, refs);
                 if (benefit !== null) viable.push({ text, benefit });
             }
             if (viable.length === 0) break;
             // Deterministic order: most benefit first, then longest, then lexicographic.
-            viable.sort((a, b) =>
-                b.benefit - a.benefit ||
-                b.text.length - a.text.length ||
-                (a.text < b.text ? -1 : a.text > b.text ? 1 : 0));
+            viable.sort(
+                (a, b) =>
+                    b.benefit - a.benefit ||
+                    b.text.length - a.text.length ||
+                    (a.text < b.text ? -1 : a.text > b.text ? 1 : 0),
+            );
 
             // Where each viable candidate occurred at the start of this
             // round, so applying one only touches the representations that
             // can contain it instead of rescanning everything per candidate.
             // Occurrences inside variables created *during* this round are
             // not in this map; the next round picks those up.
-            const owners = this.collectOwners(new Set(viable.map(v => v.text)));
+            const owners = this.collectOwners(
+                new Set(viable.map((v) => v.text)),
+            );
 
             var appliedAny = false;
             for (var { text } of viable) {
@@ -352,7 +434,11 @@ class StringTableCollector {
                 // An earlier candidate in this round may have eaten this
                 // one's occurrences: recount exactly, but only there.
                 const embedded = this.countRemaining(text, where);
-                const refs = embedded + (this.varStrings.has(text) ? 0 : (this.counts.get(text) ?? 0));
+                const refs =
+                    embedded +
+                    (this.varStrings.has(text)
+                        ? 0
+                        : (this.counts.get(text) ?? 0));
                 if (embedded < 1 || this.benefit(text, refs) === null) continue;
                 this.applyCandidate(text, where);
                 appliedAny = true;
@@ -362,7 +448,11 @@ class StringTableCollector {
         }
     }
 
-    /** Visit every substring of `text` that could become a candidate: at least aggressiveMinLength long, at most MAX_SUBSTRING_LENGTH, and never cutting a surrogate pair in half. */
+    /**
+     * Visit every substring of `text` that could become a candidate: at least
+     * aggressiveMinLength long, at most MAX_SUBSTRING_LENGTH, and never cutting
+     * a surrogate pair in half.
+     */
     scanSubstrings(text: string, visit: (sub: string) => void) {
         const maxLen = Math.min(text.length, MAX_SUBSTRING_LENGTH);
         for (var i = 0; i + this.aggressiveMinLength <= text.length; i++) {
@@ -383,9 +473,9 @@ class StringTableCollector {
 
     /**
      * Every substring of every remaining literal chunk, mapped to a rough
-     * (overlapping, occurrence-weighted) count. Substrings are never
-     * recorded if they are as long as the string that contains them: a
-     * variable may only reference strictly shorter strings.
+     * (overlapping, occurrence-weighted) count. Substrings are never recorded
+     * if they are as long as the string that contains them: a variable may only
+     * reference strictly shorter strings.
      */
     collectCandidates(): Map<string, number> {
         const candidates = new Map<string, number>();
@@ -393,9 +483,12 @@ class StringTableCollector {
             const weight = this.ownerWeight(owner);
             for (var part of parts) {
                 if (!part[0]) continue;
-                this.scanSubstrings(part[1], sub => {
+                this.scanSubstrings(part[1], (sub) => {
                     if (sub.length < owner.length) {
-                        candidates.set(sub, (candidates.get(sub) ?? 0) + weight);
+                        candidates.set(
+                            sub,
+                            (candidates.get(sub) ?? 0) + weight,
+                        );
                     }
                 });
             }
@@ -403,13 +496,16 @@ class StringTableCollector {
         return candidates;
     }
 
-    /** For each wanted substring, the set of strings whose representation contained it (as literal text) when this was called. */
+    /**
+     * For each wanted substring, the set of strings whose representation
+     * contained it (as literal text) when this was called.
+     */
     collectOwners(wanted: Set<string>): Map<string, Set<string>> {
         const owners = new Map<string, Set<string>>();
         for (var [owner, parts] of this.representations) {
             for (var part of parts) {
                 if (!part[0]) continue;
-                this.scanSubstrings(part[1], sub => {
+                this.scanSubstrings(part[1], (sub) => {
                     if (sub.length >= owner.length || !wanted.has(sub)) return;
                     var set = owners.get(sub);
                     if (!set) owners.set(sub, (set = new Set()));
@@ -421,27 +517,30 @@ class StringTableCollector {
     }
 
     /**
-     * The benefit of extracting `text`, given `refs` total references to it,
-     * or null if that is not worth doing.
+     * The benefit of extracting `text`, given `refs` total references to it, or
+     * null if that is not worth doing.
      *
-     * Benefit heuristic:
-     * bytes currently spent spelling the substring out, minus the one-off
-     * cost of storing it -- except that a variable that already exists has
-     * already paid that cost. A not-yet-variable string must also reach
-     * minCount total references: its standalone uses count towards `refs`,
-     * which is how a string that is rare on its own but common as a
+     * Benefit heuristic: bytes currently spent spelling the substring out,
+     * minus the one-off cost of storing it -- except that a variable that
+     * already exists has already paid that cost. A not-yet-variable string must
+     * also reach minCount total references: its standalone uses count towards
+     * `refs`, which is how a string that is rare on its own but common as a
      * substring can still earn a variable, and why one that stays under
      * minCount in total never does.
      */
     benefit(text: string, refs: number): number | null {
         const isVar = this.varStrings.has(text);
-        const benefit = refs * text.length - (isVar ? 0 : text.length + REFERENCE_COST);
+        const benefit =
+            refs * text.length - (isVar ? 0 : text.length + REFERENCE_COST);
         if (benefit <= this.aggressiveBenefitThreshold) return null;
         if (!isVar && refs < this.minCount) return null;
         return benefit;
     }
 
-    /** Exact (non-overlapping, weighted) occurrences of `text` in the literal chunks of `owners`, as they are right now. */
+    /**
+     * Exact (non-overlapping, weighted) occurrences of `text` in the literal
+     * chunks of `owners`, as they are right now.
+     */
     countRemaining(text: string, owners: Set<string>): number {
         var embedded = 0;
         for (var owner of owners) {
@@ -451,17 +550,17 @@ class StringTableCollector {
             if (!parts) continue;
             const weight = this.ownerWeight(owner);
             for (var part of parts) {
-                if (part[0]) embedded += weight * countOccurrences(part[1], text);
+                if (part[0])
+                    embedded += weight * countOccurrences(part[1], text);
             }
         }
         return embedded;
     }
 
     /**
-     * Give `text` a variable (if it doesn't have one) and rewrite the
-     * literal chunks it occurs in -- including the representations of
-     * other variables, which is what makes the output variables
-     * themselves come out split.
+     * Give `text` a variable (if it doesn't have one) and rewrite the literal
+     * chunks it occurs in -- including the representations of other variables,
+     * which is what makes the output variables themselves come out split.
      */
     applyCandidate(text: string, owners: Set<string>) {
         this.makeVar(text);
@@ -485,26 +584,34 @@ class StringTableCollector {
     }
 
     /**
-     * Replace every reference to `victim`'s variable with the literal text
-     * and delete the variable. Used to prune variables that end up used
-     * fewer than minCount times, and to break reference cycles if one ever
-     * forms. If `victim` is an original string it keeps its (split)
-     * representation -- its use sites are then inlined instead.
+     * Replace every reference to `victim`'s variable with the literal text and
+     * delete the variable. Used to prune variables that end up used fewer than
+     * minCount times, and to break reference cycles if one ever forms. If
+     * `victim` is an original string it keeps its (split) representation -- its
+     * use sites are then inlined instead.
      */
     inlineVar(victim: string) {
         this.varStrings.delete(victim);
         this.varNames.delete(victim);
         for (var [owner, parts] of this.representations) {
             if (owner === victim) continue;
-            if (!parts.some(p => !p[0] && p[1] === victim)) continue;
-            this.representations.set(owner, mergeParts(
-                parts.flatMap(p => (!p[0] && p[1] === victim) ? [lit(victim)] : [p]),
-            ));
+            if (!parts.some((p) => !p[0] && p[1] === victim)) continue;
+            this.representations.set(
+                owner,
+                mergeParts(
+                    parts.flatMap((p) =>
+                        !p[0] && p[1] === victim ? [lit(victim)] : [p],
+                    ),
+                ),
+            );
         }
         if (!this.counts.has(victim)) this.representations.delete(victim);
     }
 
-    /** Total references to each variable in the final output: standalone uses plus references from representations, weighted as in ownerWeight(). */
+    /**
+     * Total references to each variable in the final output: standalone uses
+     * plus references from representations, weighted as in ownerWeight().
+     */
     finalRefCounts(): Map<string, number> {
         const refs = new Map<string, number>();
         for (var v of this.varStrings) refs.set(v, this.counts.get(v) ?? 0);
@@ -522,11 +629,11 @@ class StringTableCollector {
     /**
      * Approximate size of the expression built from `parts`, for deciding
      * whether inlining a split pays for itself. References are priced at
-     * REFERENCE_COST, not at their generated name length: the generated
-     * names are deliberately long and descriptive (and carry a random
-     * suffix against collisions), on the assumption that a later
-     * minification pass renames them -- the same assumption the benefit
-     * heuristic in benefit() has always made.
+     * REFERENCE_COST, not at their generated name length: the generated names
+     * are deliberately long and descriptive (and carry a random suffix against
+     * collisions), on the assumption that a later minification pass renames
+     * them -- the same assumption the benefit heuristic in benefit() has always
+     * made.
      */
     expressionCost(parts: Part[]): number {
         const merged = mergeParts(parts);
@@ -541,26 +648,32 @@ class StringTableCollector {
 
     /**
      * Settle the variable set and its declaration order:
-     *  1. A string without a variable whose split expression would not be
-     *     shorter than its literal reverts to the literal -- its references
-     *     must not be counted as uses of the variables it pointed at.
-     *  2. Any variable whose total final uses fell below minCount (possible
-     *     after overlaps were consumed, or after step 1 removed uses) is
-     *     inlined away; that can cascade, so counts are recomputed.
-     *  3. Variables are ordered with Kahn's algorithm so every variable is
-     *     declared after all the variables its definition references.
-     * Steps 1-3 repeat until nothing changes: inlining in step 2 or breaking
-     * a cycle in step 3 can reopen steps 1-2.
+     *
+     * 1. A string without a variable whose split expression would not be shorter
+     *    than its literal reverts to the literal -- its references must not be
+     *    counted as uses of the variables it pointed at.
+     * 2. Any variable whose total final uses fell below minCount (possible after
+     *    overlaps were consumed, or after step 1 removed uses) is inlined away;
+     *    that can cascade, so counts are recomputed.
+     * 3. Variables are ordered with Kahn's algorithm so every variable is declared
+     *    after all the variables its definition references. Steps 1-3 repeat
+     *    until nothing changes: inlining in step 2 or breaking a cycle in step
+     *    3 can reopen steps 1-2.
      */
     finalizeVars(verbose: boolean) {
         // Defensive: no variable's definition may reference itself, not even
         // indirectly through a part that spells the string out again.
         for (var v of [...this.varStrings]) {
             const parts = this.representations.get(v);
-            if (parts?.some(p => !p[0] && p[1] === v)) {
-                this.representations.set(v, mergeParts(
-                    parts.flatMap(p => (!p[0] && p[1] === v) ? [lit(v)] : [p]),
-                ));
+            if (parts?.some((p) => !p[0] && p[1] === v)) {
+                this.representations.set(
+                    v,
+                    mergeParts(
+                        parts.flatMap((p) =>
+                            !p[0] && p[1] === v ? [lit(v)] : [p],
+                        ),
+                    ),
+                );
             }
         }
 
@@ -572,7 +685,7 @@ class StringTableCollector {
                 for (var s of this.counts.keys()) {
                     if (this.varStrings.has(s)) continue;
                     const parts = this.representations.get(s);
-                    if (!parts?.some(p => !p[0])) continue;
+                    if (!parts?.some((p) => !p[0])) continue;
                     if (this.expressionCost(parts) >= s.length + 2) {
                         this.representations.set(s, [lit(s)]);
                         changed = true;
@@ -584,8 +697,11 @@ class StringTableCollector {
             while (true) {
                 const refs = this.finalRefCounts();
                 const underused = [...this.varStrings]
-                    .filter(v => (refs.get(v) ?? 0) < this.minCount)
-                    .sort((a, b) => (refs.get(a)! - refs.get(b)!) || (a < b ? -1 : 1));
+                    .filter((v) => (refs.get(v) ?? 0) < this.minCount)
+                    .sort(
+                        (a, b) =>
+                            refs.get(a)! - refs.get(b)! || (a < b ? -1 : 1),
+                    );
                 if (underused.length === 0) break;
                 this.inlineVar(underused[0]);
                 changed = true;
@@ -599,7 +715,8 @@ class StringTableCollector {
                 // inlining one of its variables rather than emitting
                 // declarations that reference each other (or themselves).
                 this.inlineVar(cycleVictim);
-                if (verbose) console.log("found cycle in variable dependency graph");
+                if (verbose)
+                    console.log("found cycle in variable dependency graph");
                 changed = true;
                 continue;
             }
@@ -612,14 +729,16 @@ class StringTableCollector {
     }
 
     /**
-     * Kahn's algorithm over the variable reference graph: an edge D -> V
-     * means "V's definition references D", so D must be declared first.
-     * If there's a tie, we don't care about the order.
-     * If some variables are never freed they form (or depend on) a cycle;
-     * one of them is reported so the caller can inline it and retry.
+     * Kahn's algorithm over the variable reference graph: an edge D -> V means
+     * "V's definition references D", so D must be declared first. If there's a
+     * tie, we don't care about the order. If some variables are never freed
+     * they form (or depend on) a cycle; one of them is reported so the caller
+     * can inline it and retry.
      */
     kahnOrder(): { order: string[]; cycleVictim: string | null } {
-        const creationOrder = new Map([...this.varStrings].map((v, i) => [v, i] as const));
+        const creationOrder = new Map(
+            [...this.varStrings].map((v, i) => [v, i] as const),
+        );
         const remainingDeps = new Map<string, number>();
         const dependents = new Map<string, string[]>();
         for (var v of this.varStrings) {
@@ -637,7 +756,7 @@ class StringTableCollector {
             }
         }
         const ready = [...this.varStrings]
-            .filter(v => remainingDeps.get(v) === 0)
+            .filter((v) => remainingDeps.get(v) === 0)
             .sort((a, b) => creationOrder.get(a)! - creationOrder.get(b)!);
         const order: string[] = [];
         while (ready.length > 0) {
@@ -648,15 +767,20 @@ class StringTableCollector {
                 remainingDeps.set(dependent, left);
                 if (left === 0) {
                     // Insert keeping creation order, for stable output.
-                    const at = ready.findIndex(x => creationOrder.get(x)! > creationOrder.get(dependent)!);
+                    const at = ready.findIndex(
+                        (x) =>
+                            creationOrder.get(x)! >
+                            creationOrder.get(dependent)!,
+                    );
                     if (at === -1) ready.push(dependent);
                     else ready.splice(at, 0, dependent);
                 }
             }
         }
-        if (order.length === this.varStrings.size) return { order, cycleVictim: null };
+        if (order.length === this.varStrings.size)
+            return { order, cycleVictim: null };
         const inCycle = [...this.varStrings]
-            .filter(v => !order.includes(v))
+            .filter((v) => !order.includes(v))
             .sort((a, b) => creationOrder.get(a)! - creationOrder.get(b)!);
         return { order, cycleVictim: inCycle[0] ?? null };
     }
@@ -668,10 +792,12 @@ class StringTableCollector {
             part[0]
                 ? t.stringLiteral(part[1])
                 : t.identifier(this.varNames.get(part[1])!);
-        return merged.slice(1).reduce<t.Expression>(
-            (prev, part) => t.binaryExpression("+", prev, toExpr(part)),
-            toExpr(merged[0]),
-        );
+        return merged
+            .slice(1)
+            .reduce<t.Expression>(
+                (prev, part) => t.binaryExpression("+", prev, toExpr(part)),
+                toExpr(merged[0]),
+            );
     }
 
     getReplacementExpression(string: string): t.Expression | undefined {
@@ -680,7 +806,7 @@ class StringTableCollector {
         }
         if (!this.aggressiveSplitting) return undefined;
         const parts = this.representations.get(string);
-        if (!parts?.some(p => !p[0])) return undefined;
+        if (!parts?.some((p) => !p[0])) return undefined;
         // A string without a variable is inlined at its use sites, so only
         // replace it if the concatenation is actually shorter than the
         // literal. finalizeVars() has already reverted the ones that are
@@ -696,10 +822,12 @@ class StringTableCollector {
         // out of the (shorter) variables declared before them.
         for (var v of this.orderedVars) {
             const parts = this.representations.get(v) ?? [lit(v)];
-            declarators.push(t.variableDeclarator(
-                t.identifier(this.varNames.get(v)!),
-                this.buildExpressionFromParts(parts),
-            ));
+            declarators.push(
+                t.variableDeclarator(
+                    t.identifier(this.varNames.get(v)!),
+                    this.buildExpressionFromParts(parts),
+                ),
+            );
         }
         return t.variableDeclaration("var", declarators);
     }

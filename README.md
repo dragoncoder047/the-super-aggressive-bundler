@@ -1,14 +1,25 @@
 # the-super-aggressive-bundler
 
-collection of javascript/typescript transformers to do more aggressive optimizations of your bundle using Bun and Babel.
+collection of javascript/typescript transformers to do more aggressive
+optimizations of your bundle using Bun and Babel.
 
-source maps are preserved, and chained using [@ampproject/remapping](https://www.npmjs.com/package/@ampproject/remapping) or Babel, so the transformations don't show up in the source map.
+source maps are preserved, and chained using
+[@ampproject/remapping](https://www.npmjs.com/package/@ampproject/remapping) or
+Babel, so the transformations don't show up in the source map.
 
 ## general API
 
-the main entry point is `pipelineBuild()` - it takes 2 options, the first one is your standard `Bun.build()` options minus `format` and `sourcemap` (`format` is forced to `"esm"` and `sourcemap` is forced to `"external"`). the second argument is an array of optimizers, which will be applied in order to each output javascript file. css, html, etc. are not touched.
+the main entry point is `pipelineBuild()` - it takes 2 options, the first one is
+your standard `Bun.build()` options minus `format` and `sourcemap` (`format` is
+forced to `"esm"` and `sourcemap` is forced to `"external"`). the second
+argument is an array of optimizers, which will be applied in order to each
+output javascript file. css, html, etc. are not touched.
 
-most of the optimizers are Babel AST transformations, so they might need to be wrapped in `babelRewrite()` to make it a transformer to fit in `pipelineBuild()`. if there are multiple consecutive Babel transforms, you can put them all in the same `babelRewrite()` to save having to stringify and re-parse on each transform.
+most of the optimizers are Babel AST transformations, so they might need to be
+wrapped in `babelRewrite()` to make it a transformer to fit in
+`pipelineBuild()`. if there are multiple consecutive Babel transforms, you can
+put them all in the same `babelRewrite()` to save having to stringify and
+re-parse on each transform.
 
 for the general idea, see [example-build.ts](./example-build.ts).
 
@@ -16,56 +27,109 @@ for the general idea, see [example-build.ts](./example-build.ts).
 
 ### bunMinify
 
-just minifies the output again using Bun - useful to be used after other optimizers.
+just minifies the output again using Bun - useful to be used after other
+optimizers.
+
+### typeof
+
+rewrites all `typeof x === y` calls to a single `same_type(x, y)` call (where
+`const same_type = (x, y) => typeof x === y`) so that the very long `typeof`
+operator and its string argument only appears once. (best paired with
+stringDedupe to reduce the strings!)
 
 ### instanceof
 
-rewrites all `x instanceof y` calls to a single `isinstance(x, y)` call (where `const isinstance = (x, y) => x instanceof y`) so that the very long `instanceof` operator only appears once.
+rewrites all `x instanceof y` calls to a single `isinstance(x, y)` call (where
+`const isinstance = (x, y) => x instanceof y`) so that the very long
+`instanceof` operator only appears once.
 
 ### classRewrite
 
-rewrites `class A {}` into `var A = class {}` to get around [this Bun bug](https://github.com/oven-sh/bun/issues/32652).
+rewrites `class A {}` into `var A = class {}` to get around
+[this Bun bug](https://github.com/oven-sh/bun/issues/32652).
 
 ### inlineConstantComputedKeys
 
-rewrites `{ [X]: Y }` into `{ X: Y }` when X is a constant (number or string literal) to get around [this Bun bug](https://github.com/oven-sh/bun/issues/29487).
+rewrites `{ [X]: Y }` into `{ X: Y }` when X is a constant (number or string
+literal) to get around
+[this Bun bug](https://github.com/oven-sh/bun/issues/29487).
 
 ### wellKnownInline
 
-takes all member expressions that get the property of a well-known builtin static namespace function or constructor, such as `Math.sqrt()` or `Array.isArray()` and copies the value out into a top-level variable so it's only spelled out once.
+takes all member expressions that get the property of a well-known builtin
+static namespace function or constructor, such as `Math.sqrt()` or
+`Array.isArray()` and copies the value out into a top-level variable so it's
+only spelled out once.
 
-default namespaces: `Math`, `JSON`, `Reflect`, `Object`, `Array`, `String`, `Symbol`, `Promise`, `Proxy`, `Error`, `RegExp`, `console`
+default namespaces: `Math`, `JSON`, `Reflect`, `Object`, `Array`, `String`,
+`Symbol`, `Promise`, `Proxy`, `Error`, `RegExp`, `console`
 
-NOTE: this can break tools that monkey-patch things like `console.log()` to do something different with the log, since this plugin causes the module to sample the value of `console.log` and use that and ignore monkey-path updates since it no longer uses the `console` object directly.
+NOTE: this can break tools that monkey-patch things like `console.log()` to do
+something different with the log, since this plugin causes the module to sample
+the value of `console.log` and use that and ignore monkey-path updates since it
+no longer uses the `console` object directly.
 
 ### stringDedupe
 
-replaces all strings with a variable reference to the string, so the string only has to be written once.
+replaces all strings with a variable reference to the string, so the string only
+has to be written once.
 
 consider this simple file:
 
 ```ts
-console.log("default", "default", "default", "default", "default", "default", "inherit", "default", "default", "inherit", "inherit", "inherit");
+console.log(
+    "default",
+    "default",
+    "default",
+    "default",
+    "default",
+    "default",
+    "inherit",
+    "default",
+    "default",
+    "inherit",
+    "inherit",
+    "inherit",
+);
 ```
 
 with standard minification it can be minified to:
 
 ```js
-console.log("default","default","default","default","default","default","inherit","default","default","inherit","inherit","inherit");
+console.log(
+    "default",
+    "default",
+    "default",
+    "default",
+    "default",
+    "default",
+    "inherit",
+    "default",
+    "default",
+    "inherit",
+    "inherit",
+    "inherit",
+);
 ```
 
 but with this plugin, it minifies to:
 
 ```js
-var x="inherit",p="default";console.log(p,p,p,p,p,p,x,p,p,x,x,x);
+var x = "inherit",
+    p = "default";
+console.log(p, p, p, p, p, p, x, p, p, x, x, x);
 ```
 
 and the more times the string is repeated, the better minification you get!
 
 ### arrowFunctionRewrite
 
-this rewrites all your `function` functions as arrow functions wherever possible (i.e. when their bodies don't use their own name, `this`, `super`, `arguments`, or `new.target`) and then hoists them to the top if it was a declaration (preserving the normal javascript weirdness).
+this rewrites all your `function` functions as arrow functions wherever possible
+(i.e. when their bodies don't use their own name, `this`, `super`, `arguments`,
+or `new.target`) and then hoists them to the top if it was a declaration
+(preserving the normal javascript weirdness).
 
 ### hoistAllFunctions
 
-hoists all `function` functions to the top of their enclosing scope, so any `var`-chaining isn't interrupted by the intervening `function`. best used last.
+hoists all `function` functions to the top of their enclosing scope, so any
+`var`-chaining isn't interrupted by the intervening `function`. best used last.
